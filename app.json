@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Al Qur'an",
+    "slug": "alquran-app",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/splash.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      "expo-system-ui",
+      "expo-av"
+    ],
+    "android": {
+      "package": "com.janubiyyy.alquranapp",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/splash.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.janubiyyy.alquranapp"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "extra": {
+      "eas": {
+        "projectId": "e4f5fe35-4265-4eb6-890e-1b775fe603da"
+      }
+    }
+  }
+}
