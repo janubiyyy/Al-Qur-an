@@ -1,4 +1,3 @@
-// src/screens/SearchScreen.js
 import React, { useState, useMemo } from "react";
 import {
   View,

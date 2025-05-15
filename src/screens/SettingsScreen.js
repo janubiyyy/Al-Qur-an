@@ -7,7 +7,6 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     console.log(`Tema aplikasi sekarang: ${isDarkMode ? "dark" : "light"}`);
-    // terapkan logic tema di sini
   }, [isDarkMode]);
 
   return (

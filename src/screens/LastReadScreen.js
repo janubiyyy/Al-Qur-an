@@ -1,5 +1,3 @@
-// src/screens/LastReadScreen.js
-
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, ActivityIndicator } from "react-native-paper";
@@ -82,12 +80,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
-    // shadow untuk iOS
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    // elevation untuk Android
     elevation: 3,
   },
   content: {
