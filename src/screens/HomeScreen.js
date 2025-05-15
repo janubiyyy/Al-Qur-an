@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.js
 import React, { useCallback, useState } from "react";
 import {
   View,

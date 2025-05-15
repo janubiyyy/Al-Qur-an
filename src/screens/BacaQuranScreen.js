@@ -1,4 +1,3 @@
-// src/screens/BacaQuranScreen.js
 import React, { useState, useMemo, useCallback } from "react";
 import {
   View,

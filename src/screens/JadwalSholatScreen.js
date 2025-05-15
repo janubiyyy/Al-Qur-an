@@ -1,5 +1,3 @@
-// src/screens/JadwalSholatScreen.js
-
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
@@ -15,7 +13,6 @@ import { Audio } from "expo-av";
 import * as Notifications from "expo-notifications";
 import { fetchJadwalSholat } from "../services/prayerService";
 
-// urutan dan label sholat
 const prayerConfig = [
   { key: "subuh", label: "Subuh", icon: "weather-sunset-up" },
   { key: "dzuhur", label: "Dzuhur", icon: "white-balance-sunny" },
@@ -24,7 +21,6 @@ const prayerConfig = [
   { key: "isya", label: "Isya", icon: "moon-waning-crescent" },
 ];
 
-// Pastikan notifikasi lokal tampil di Expo Go
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -37,10 +33,11 @@ export default function JadwalSholatScreen() {
   const [jadwal, setJadwal] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const playedRef = useRef({}); // track notifikasi sudah diputar
-  const soundRef = useRef(); // audio adzan instance
+  const [playingKey, setPlayingKey] = useState(null);
+  const playedRef = useRef({});
+  const soundRef = useRef(null);
 
-  // 1️⃣ Minta izin notifikasi lokal
+  // 1️⃣ Minta izin notifikasi
   useEffect(() => {
     (async () => {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -53,14 +50,14 @@ export default function JadwalSholatScreen() {
     })();
   }, []);
 
-  // 2️⃣ Load jadwal sholat dari myquran.com
+  // 2️⃣ Load jadwal
   const loadJadwal = useCallback(async () => {
     setLoading(true);
     try {
       const cityCode = "1301";
       const { data } = await fetchJadwalSholat(cityCode);
       setJadwal(data.jadwal);
-      playedRef.current = {}; // reset flag tiap refresh
+      playedRef.current = {};
     } catch (e) {
       console.error(e);
       Alert.alert("Error", "Gagal memuat jadwal sholat");
@@ -74,14 +71,31 @@ export default function JadwalSholatScreen() {
     loadJadwal();
   }, [loadJadwal]);
 
-  // 3️⃣ Auto‐play + notifikasi lokal setiap menit
+  // Unload sound saat unmount
+  useEffect(() => {
+    return () => {
+      (async () => {
+        if (soundRef.current) {
+          try {
+            await soundRef.current.stopAsync();
+          } catch {}
+          try {
+            await soundRef.current.unloadAsync();
+          } catch {}
+          soundRef.current = null;
+        }
+      })();
+    };
+  }, []);
+
+  // 3️⃣ Auto-play + notifikasi tiap menit
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-      const hhmm = now.toTimeString().slice(0, 5); // "HH:MM"
+      const hhmm = now.toTimeString().slice(0, 5);
       prayerConfig.forEach((p) => {
         if (jadwal[p.key] === hhmm && !playedRef.current[p.key]) {
-          playAdzan();
+          playAdzan(p.key);
           Notifications.scheduleNotificationAsync({
             content: {
               title: `Waktu Sholat ${p.label}`,
@@ -96,29 +110,72 @@ export default function JadwalSholatScreen() {
     return () => clearInterval(interval);
   }, [jadwal]);
 
-  // pull‐to‐refresh
+  // Pull-to-refresh
   const onRefresh = () => {
     setRefreshing(true);
     loadJadwal();
   };
 
-  // 4️⃣ Fungsi play adzan
-  const playAdzan = useCallback(async () => {
-    try {
-      if (soundRef.current) {
+  // 4️⃣ Play adzan (dipakai auto & manual)
+  const playAdzan = useCallback(async (key) => {
+    // hentikan & unload previous sound
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+      } catch {}
+      try {
         await soundRef.current.unloadAsync();
-      }
+      } catch {}
+      soundRef.current = null;
+    }
+
+    try {
       const { sound } = await Audio.Sound.createAsync(
         require("../../assets/adzan.mp3")
       );
       soundRef.current = sound;
+      setPlayingKey(key);
       await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          setPlayingKey(null);
+          // cleanup setelah selesai
+          (async () => {
+            try {
+              await sound.unloadAsync();
+            } catch {}
+            soundRef.current = null;
+          })();
+        }
+      });
     } catch (err) {
       console.error("Error play adzan:", err);
     }
   }, []);
 
-  // loading spinner
+  // 5️⃣ Toggle tombol play/pause
+  const toggleAdzan = useCallback(
+    async (key) => {
+      if (playingKey === key) {
+        // sedang play → stop & unload
+        if (soundRef.current) {
+          try {
+            await soundRef.current.stopAsync();
+          } catch {}
+          try {
+            await soundRef.current.unloadAsync();
+          } catch {}
+          soundRef.current = null;
+        }
+        setPlayingKey(null);
+      } else {
+        // play adzan baru
+        await playAdzan(key);
+      }
+    },
+    [playingKey, playAdzan]
+  );
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -127,7 +184,6 @@ export default function JadwalSholatScreen() {
     );
   }
 
-  // format tanggal hari ini
   const today = new Date().toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -142,25 +198,33 @@ export default function JadwalSholatScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Jadwal Sholat Hari Ini</Text>
         <Text style={styles.headerDate}>{today}</Text>
       </View>
 
-      {/* Daftar jadwal */}
-      {prayerConfig.map((p) => (
-        <View key={p.key} style={styles.card}>
-          <Icon name={p.icon} size={28} color="#4CAF50" />
-          <View style={styles.info}>
-            <Text style={styles.label}>{p.label}</Text>
-            <Text style={styles.time}>{jadwal[p.key]}</Text>
+      {prayerConfig.map((p) => {
+        const isThisPlaying = playingKey === p.key;
+        return (
+          <View key={p.key} style={styles.card}>
+            <Icon name={p.icon} size={28} color="#4CAF50" />
+            <View style={styles.info}>
+              <Text style={styles.label}>{p.label}</Text>
+              <Text style={styles.time}>{jadwal[p.key]}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => toggleAdzan(p.key)}
+              style={styles.playButton}
+            >
+              <Icon
+                name={isThisPlaying ? "pause-circle" : "play-circle"}
+                size={28}
+                color="#4CAF50"
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={playAdzan} style={styles.playButton}>
-            <Icon name="play-circle" size={28} color="#4CAF50" />
-          </TouchableOpacity>
-        </View>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 }

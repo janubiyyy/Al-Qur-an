@@ -1,4 +1,3 @@
-// src/screens/DetailSurahScreen.js
 import React, { useRef, useCallback } from "react";
 import { View, FlatList, Alert, StyleSheet } from "react-native";
 import { Text, ActivityIndicator } from "react-native-paper";
@@ -100,9 +99,7 @@ export default function DetailSurahScreen({ route }) {
               />
             </View>
             <View style={styles.ayatNumberContainer}>
-              <Text style={styles.ayatNumberText}>
-                {convertToArabicNumber(item.nomor)}
-              </Text>
+              <Text style={styles.ayatNumberText}>{item.nomor}</Text>
             </View>
             <Text style={styles.arab}>{item.ar}</Text>
             <Text style={styles.latin}>{item.tr}</Text>
